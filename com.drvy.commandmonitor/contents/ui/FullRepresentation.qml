@@ -9,6 +9,10 @@ Item {
     property var commandList: []
     property var outputMap: ({})
 
+    property var runCommandFn
+    property var copyFn
+    property var isVisibleFn
+
     signal refreshRequested(var cmd)
 
     Layout.preferredWidth: Kirigami.Units.gridUnit * 22
@@ -26,8 +30,12 @@ Item {
 
             delegate: CommandDelegate {
                 width: listView.width
+                visible: fullRep.isVisibleFn ? fullRep.isVisibleFn(modelData) : true
+                height: visible ? implicitHeight : 0
                 command: modelData
                 output: fullRep.outputMap[modelData.id]
+                runCommandFn: fullRep.runCommandFn
+                copyFn: fullRep.copyFn
                 onRefreshRequested: function (cmd) {
                     fullRep.refreshRequested(cmd);
                 }

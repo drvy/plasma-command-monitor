@@ -7,7 +7,18 @@
 //   command: string,
 //   intervalMs: number (clamped to [MIN_INTERVAL_MS, MAX_INTERVAL_MS]),
 //   enabled: bool,
-//   colorRules: [ { pattern: string, color: string } ]
+//   showInPanel: bool (include this command's first output line in the panel text),
+//   colorRules: [ { pattern: string, color: string } ],
+//   icon: string (icon name shown before the output; "" = no icon),
+//   labelColor: string (hex color shared by both the icon tint -- only
+//                       visible on recolorable/symbolic icons -- and the
+//                       name, which is displayed as the label; "" = theme default),
+//   labelBold: bool (default true), labelItalic: bool (default false),
+//   outputBold: bool (default false), outputItalic: bool (default false),
+//   clickCommand: string (fire-and-forget command run on click; "" = none,
+//                         in which case clicking copies the output instead),
+//   hideWhenEmpty: bool (hide this command entirely, in the panel and the
+//                        popup list, whenever its current output is empty)
 // }
 
 var MIN_INTERVAL_MS = 1000;
@@ -37,7 +48,16 @@ function createDefaultEntry() {
         command: "",
         intervalMs: 5000,
         enabled: true,
-        colorRules: []
+        showInPanel: true,
+        colorRules: [],
+        icon: "",
+        labelColor: "",
+        labelBold: true,
+        labelItalic: false,
+        outputBold: false,
+        outputItalic: false,
+        clickCommand: "",
+        hideWhenEmpty: false
     };
 }
 
@@ -58,7 +78,16 @@ function parseCommands(json) {
             command: entry.command || "",
             intervalMs: clampInterval(entry.intervalMs),
             enabled: entry.enabled !== false,
-            colorRules: Array.isArray(entry.colorRules) ? entry.colorRules : []
+            showInPanel: entry.showInPanel !== false,
+            colorRules: Array.isArray(entry.colorRules) ? entry.colorRules : [],
+            icon: entry.icon || "",
+            labelColor: entry.labelColor || "",
+            labelBold: entry.labelBold !== false,
+            labelItalic: entry.labelItalic === true,
+            outputBold: entry.outputBold === true,
+            outputItalic: entry.outputItalic === true,
+            clickCommand: entry.clickCommand || "",
+            hideWhenEmpty: entry.hideWhenEmpty === true
         };
     });
 }
