@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Dragomir Yordanov <dyordanov@drvy.net>
+// SPDX-License-Identifier: MIT
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
@@ -48,7 +51,7 @@ ColumnLayout {
             font.bold: !!delegate.command.outputBold
             font.italic: !!delegate.command.outputItalic
             opacity: delegate.output && delegate.output.richHtml ? 1 : 0.5
-            text: (delegate.output && delegate.output.richHtml) || "(no output)"
+            text: (delegate.output && delegate.output.richHtml) || i18n("(no output)")
 
             MouseArea {
                 anchors.fill: parent
@@ -60,12 +63,12 @@ ColumnLayout {
                 id: contextMenu
 
                 QQC2.MenuItem {
-                    text: "Run command"
+                    text: i18n("Run command")
                     enabled: !!delegate.command.clickCommand
                     onTriggered: if (delegate.runCommandFn) delegate.runCommandFn(delegate.command)
                 }
                 QQC2.MenuItem {
-                    text: "Copy to clipboard"
+                    text: i18n("Copy to clipboard")
                     onTriggered: if (delegate.copyFn) delegate.copyFn(delegate.command)
                 }
             }
@@ -74,7 +77,7 @@ ColumnLayout {
         PlasmaComponents3.ToolButton {
             icon.name: "view-refresh"
             display: PlasmaComponents3.AbstractButton.IconOnly
-            PlasmaComponents3.ToolTip.text: "Run now"
+            PlasmaComponents3.ToolTip.text: i18n("Run now")
             PlasmaComponents3.ToolTip.visible: hovered
             onClicked: delegate.refreshRequested(delegate.command)
         }

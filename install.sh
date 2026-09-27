@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Dragomir Yordanov <dyordanov@drvy.net>
+# SPDX-License-Identifier: MIT
+#
 # Install/upgrade helper for the Command Monitor Plasma 6 widget.
 set -euo pipefail
 
