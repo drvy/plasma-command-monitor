@@ -140,7 +140,7 @@ default planar/desktop mode.)
   in the `.qml` files need wrapping. Data strings (e.g. a new command's
   default name "New command") are deliberately left unwrapped since
   they're user-edited data, not UI text.
-- Git: local repo, no remote. `user.email` is set locally (in this
+- Git: remote is `github.com/drvy/plasma-command-monitor` (SSH host alias `github.drvy`); one PR per feature, merged with a merge commit. `user.email` is set locally (in this
   repo's `.git/config`, not global) to `dyordanov@drvy.net`, distinct
   from the global/work email — don't let a global config change leak in
   here.
