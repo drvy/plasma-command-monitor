@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 import QtQuick
+import QtQml
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.plasma.plasmoid
@@ -26,42 +27,115 @@ PlasmoidItem {
     readonly property bool isDesktopContainer: Plasmoid.formFactor === PlasmaCore.Types.Planar
         || Plasmoid.formFactor === PlasmaCore.Types.Application
 
-    Plasma5Support.DataSource {
-        id: executable
-        engine: "executable"
-        connectedSources: []
-        interval: 0
+    // IMPORTANT: Plasma5Support.DataSource.connectSource() only ever takes a
+    // single argument (see plasma5supportplugin.qmltypes) -- there is no
+    // "connectSource(source, interval)" overload in this Plasma6 API,
+    // despite that having been valid on Plasma 5. Passing a second argument
+    // is silently accepted by QML but does nothing: it does NOT set up a
+    // per-source polling interval. The engine only re-executes a source
+    // automatically when the *DataSource itself* has a non-zero `interval`
+    // property, which applies to every source connected to that DataSource.
+    // (Confirmed with an isolated qml6 test: connectSource(cmd, ms) ran the
+    // command exactly once and never again, no matter how long we waited or
+    // how the watched file changed; a DataSource with `interval: 2000` and a
+    // plain connectSource(cmd) re-ran it correctly every 2s.)
+    //
+    // Since commands here can each have their own intervalMs, one DataSource
+    // is instantiated per distinct interval value actually in use, and every
+    // command with that interval is connected to it.
+    function handleNewData(sourceName, data) {
+        var cmd = root.commandForSource(sourceName);
+        if (!cmd) {
+            return;
+        }
+        var stdout = data["stdout"] || "";
+        var stderr = data["stderr"] || "";
+        var newlineIndex = stdout.indexOf("\n");
+        var firstLine = newlineIndex === -1 ? stdout : stdout.substring(0, newlineIndex);
+        root.setOutput(cmd.id, {
+            richHtml: AnsiJs.toRichText(stdout, cmd.colorRules),
+            richFirstLine: AnsiJs.toRichText(firstLine, cmd.colorRules),
+            plainText: AnsiJs.stripAnsi(stdout),
+            stderr: stderr,
+            exitCode: data["exit code"],
+            lastRun: Date.now()
+        });
+    }
 
-        onNewData: function (sourceName, data) {
-            var cmd = root.commandForSource(sourceName);
-            if (!cmd) {
-                return;
+    // A command is only worth pausing while collapsed if nothing is
+    // relying on it staying live, i.e. it's not currently rendered in the
+    // panel text.
+    function isPausable(cmd) {
+        return cmd.intervalMs < fastCommandThresholdMs && cmd.showInPanel === false;
+    }
+
+    function shouldPoll(cmd) {
+        if (!cmd.enabled || !cmd.command) {
+            return false;
+        }
+        return isDesktopContainer || root.expanded || !isPausable(cmd);
+    }
+
+    // Commands that should be actively polled right now, and the distinct
+    // set of their intervals -- both recomputed only when commandList or
+    // expanded/isDesktopContainer actually change (real, infrequent events),
+    // never per-tick.
+    property var activeCommands: commandList.filter(shouldPoll)
+
+    property var intervalBuckets: {
+        var seen = {};
+        var out = [];
+        activeCommands.forEach(function (cmd) {
+            if (!seen[cmd.intervalMs]) {
+                seen[cmd.intervalMs] = true;
+                out.push(cmd.intervalMs);
             }
-            var stdout = data["stdout"] || "";
-            var stderr = data["stderr"] || "";
-            var newlineIndex = stdout.indexOf("\n");
-            var firstLine = newlineIndex === -1 ? stdout : stdout.substring(0, newlineIndex);
-            root.setOutput(cmd.id, {
-                richHtml: AnsiJs.toRichText(stdout, cmd.colorRules),
-                richFirstLine: AnsiJs.toRichText(firstLine, cmd.colorRules),
-                plainText: AnsiJs.stripAnsi(stdout),
-                stderr: stderr,
-                exitCode: data["exit code"],
-                lastRun: Date.now()
-            });
+        });
+        return out;
+    }
+
+    function commandTextsForInterval(ms) {
+        return activeCommands
+            .filter(function (cmd) { return cmd.intervalMs === ms; })
+            .map(function (cmd) { return cmd.command; });
+    }
+
+    // One real, engine-driven periodic DataSource per distinct interval.
+    Instantiator {
+        model: root.intervalBuckets
+
+        delegate: Plasma5Support.DataSource {
+            required property int modelData
+            engine: "executable"
+            interval: modelData
+            // Assigning the whole list lets the DataSource itself diff old
+            // vs new and connect/disconnect only what changed -- no need to
+            // manage connectSource/disconnectSource by hand here.
+            connectedSources: root.commandTextsForInterval(modelData)
+
+            onNewData: function (sourceName, data) {
+                root.handleNewData(sourceName, data);
+            }
         }
     }
 
-    // Fire-and-forget runner for per-command "click commands". Kept
-    // separate from the periodic `executable` source above so that running
-    // one never disturbs the connected/interval state of a periodic command
-    // that happens to share the same command text.
+    // One-shot runner, used both for fire-and-forget "click commands" and
+    // for the explicit per-command "Refresh" action. Unlike the periodic
+    // pollers above, this never sets an interval: it connects a source,
+    // waits for its single result, and disconnects immediately -- the same
+    // shape already relied on for click commands, which is what makes
+    // disconnect+reconnect safe to repeat here (there's always a real gap,
+    // at least one full run, between a disconnect and the next connect of
+    // the same source; reconnecting a source in the same tick it was just
+    // disconnected on, which the periodic pollers above never do, is what
+    // previously produced stale cached data in testing).
     Plasma5Support.DataSource {
-        id: trigger
+        id: oneShot
         engine: "executable"
         connectedSources: []
 
-        onNewData: function (sourceName) {
+        onNewData: function (sourceName, data) {
+            root.handleNewData(sourceName, data);
             disconnectSource(sourceName);
         }
     }
@@ -82,14 +156,24 @@ PlasmoidItem {
 
     function runClickCommand(cmd) {
         if (cmd.clickCommand) {
-            trigger.connectSource(cmd.clickCommand);
+            oneShot.connectSource(cmd.clickCommand);
+        }
+    }
+
+    // Explicit per-command "Refresh" action: run it once, right now,
+    // outside of its regular polling interval.
+    function forceRefresh(cmd) {
+        if (cmd.command) {
+            oneShot.connectSource(cmd.command);
         }
     }
 
     function copyOutput(cmd) {
         var out = outputMap[cmd.id];
         if (out && out.plainText) {
-            copyToClipboard(out.plainText);
+            // Trailing blank lines/whitespace are just how the command's
+            // output happened to end, not something worth pasting.
+            copyToClipboard(out.plainText.replace(/\s+$/, ""));
         }
     }
 
@@ -108,62 +192,8 @@ PlasmoidItem {
         outputMap = copy;
     }
 
-    function connectCommand(cmd) {
-        if (cmd.enabled && cmd.command) {
-            executable.connectSource(cmd.command, cmd.intervalMs);
-        }
-    }
-
-    function disconnectAllSources() {
-        var sources = executable.connectedSources.slice();
-        sources.forEach(function (source) {
-            executable.disconnectSource(source);
-        });
-    }
-
-    function connectAll() {
-        commandList.forEach(connectCommand);
-    }
-
-    // A command is only worth pausing while collapsed if nothing is
-    // relying on it staying live, i.e. it's not currently rendered in the
-    // panel text.
-    function isPausable(cmd) {
-        return cmd.intervalMs < fastCommandThresholdMs && cmd.showInPanel === false;
-    }
-
-    function disconnectFastCommands() {
-        commandList.forEach(function (cmd) {
-            if (isPausable(cmd)) {
-                executable.disconnectSource(cmd.command);
-            }
-        });
-    }
-
-    function reconnectFastCommands() {
-        commandList.forEach(function (cmd) {
-            if (isPausable(cmd)) {
-                connectCommand(cmd);
-            }
-        });
-    }
-
     function loadConfig() {
-        disconnectAllSources();
         commandList = CommandsJs.parseCommands(Plasmoid.configuration.commandsJson);
-        // On the desktop container there is no compact/full split, so
-        // everything runs all the time. In a panel, only fast commands get
-        // paused while collapsed; slow ones stay connected so their data
-        // is fresh whenever the popup is reopened.
-        if (isDesktopContainer || expanded) {
-            connectAll();
-        } else {
-            commandList.forEach(function (cmd) {
-                if (!isPausable(cmd)) {
-                    connectCommand(cmd);
-                }
-            });
-        }
     }
 
     Component.onCompleted: loadConfig()
@@ -172,17 +202,6 @@ PlasmoidItem {
         target: Plasmoid.configuration
         function onCommandsJsonChanged() {
             root.loadConfig();
-        }
-    }
-
-    onExpandedChanged: function () {
-        if (isDesktopContainer) {
-            return;
-        }
-        if (root.expanded) {
-            reconnectFastCommands();
-        } else {
-            disconnectFastCommands();
         }
     }
 
@@ -240,9 +259,9 @@ PlasmoidItem {
         id: compact
 
         Layout.fillHeight: true
-        Layout.minimumWidth: rowLayout.implicitWidth + Kirigami.Units.smallSpacing * 2
-        Layout.preferredWidth: rowLayout.implicitWidth + Kirigami.Units.smallSpacing * 2
-        implicitWidth: rowLayout.implicitWidth + Kirigami.Units.smallSpacing * 2
+        Layout.minimumWidth: rowLayout.implicitWidth
+        Layout.preferredWidth: rowLayout.implicitWidth
+        implicitWidth: rowLayout.implicitWidth
         implicitHeight: Kirigami.Units.iconSizes.small
 
         RowLayout {
@@ -276,8 +295,6 @@ PlasmoidItem {
                     required property var modelData
                     visible: root.isPanelVisible(modelData)
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: Kirigami.Units.smallSpacing
-                    Layout.rightMargin: Kirigami.Units.smallSpacing
                     spacing: Kirigami.Units.smallSpacing
 
                     Kirigami.Icon {
@@ -332,7 +349,7 @@ PlasmoidItem {
         outputMap: root.outputMap
         isVisibleFn: root.isListVisible
         onRefreshRequested: function (cmd) {
-            root.connectCommand(cmd);
+            root.forceRefresh(cmd);
         }
         runCommandFn: root.runClickCommand
         copyFn: root.copyOutput
