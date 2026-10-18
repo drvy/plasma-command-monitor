@@ -39,6 +39,30 @@ install.sh          install / upgrade / preview helper
 ## Configuration
 
 Each command has: a name, the shell command line, a refresh interval
-(1s–24h), an enabled flag, and an optional list of `{pattern, color}`
-plain-text color rules. Configuration is edited from the widget's own
-"Configure..." page and stored as a single JSON-encoded list.
+(1s–24h), an enabled flag, an optional icon (picked via the standard KDE
+icon dialog), a shared color for that icon and the name, independent
+bold/italic toggles for the name and for the output text, an optional
+"click command", an option to hide the command entirely whenever its
+output is empty, and a list of `{pattern, color}` plain-text color rules.
+Configuration is edited from the widget's own "Configure..." page and
+stored as a single JSON-encoded list.
+
+Each command is rendered as `[icon] name output`, with a small margin
+between each part — the icon is simply omitted when not set. Commands
+display in the order they're listed on the "Configure..." page; use the
+up/down arrows next to each entry there to reorder them.
+
+### Click actions
+
+Clicking a command's output:
+- **Left click** (anywhere on the panel) — opens/closes the popup listing
+  every command, same as clicking the compact icon.
+- **Right click** — always shows Plasma's normal widget menu (which always
+  includes "Configure..." and "Remove this widget"), with "Run command"
+  (only shown if a click command is set for that entry) as the first
+  extra item and "Copy to clipboard" as the second, targeting whichever
+  command the pointer is currently over.
+
+Click commands run fire-and-forget (no output shown), e.g. `notify-send`,
+`xdg-open`, or `systemctl restart something`. Each command has its own
+independent click command — this is not shared/global.
