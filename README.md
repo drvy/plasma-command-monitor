@@ -3,6 +3,22 @@
 A KDE Plasma 6 widget that runs user-defined shell commands, each on its own
 refresh interval (1 second to 24 hours), and displays their colored output.
 
+## Requirements
+
+KDE Plasma 6.0 or newer. `plasma-sdk` is only needed for development.
+
+## Install
+
+```sh
+git clone https://github.com/drvy/plasma-command-monitor.git
+cd plasma-command-monitor
+./install.sh install
+```
+
+Then add "Command Monitor" from the widget list. A `.plasmoid` file can
+be built with `./install.sh package` and installed with
+`kpackagetool6 -t Plasma/Applet -i <file>.plasmoid`.
+
 ## Design goals
 
 - **Low CPU usage.** Periodic execution is delegated entirely to Plasma's
@@ -75,3 +91,7 @@ Clicking a command's output:
 Click commands run fire-and-forget (no output shown), e.g. `notify-send`,
 `xdg-open`, or `systemctl restart something`. Each command has its own
 independent click command — this is not shared/global.
+
+## License
+
+[MIT](LICENSE)
