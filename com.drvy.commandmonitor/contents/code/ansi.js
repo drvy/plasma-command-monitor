@@ -1,4 +1,6 @@
 .pragma library
+// SPDX-FileCopyrightText: 2026 Dragomir Yordanov <dyordanov@drvy.net>
+// SPDX-License-Identifier: MIT
 
 // Converts raw command output (which may contain ANSI SGR escape codes)
 // into HTML suitable for a QML Text element with textFormat: Text.RichText,

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Dragomir Yordanov <dyordanov@drvy.net>
+// SPDX-License-Identifier: MIT
+
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents3
@@ -44,7 +47,7 @@ Item {
             PlasmaComponents3.Label {
                 anchors.centerIn: parent
                 visible: listView.count === 0
-                text: "No commands configured yet. Right-click the widget and choose \"Configure...\" to add one."
+                text: i18n("No commands configured yet. Right-click the widget and choose \"Configure...\" to add one.")
                 wrapMode: Text.Wrap
                 width: parent.width - Kirigami.Units.largeSpacing * 2
                 horizontalAlignment: Text.AlignHCenter

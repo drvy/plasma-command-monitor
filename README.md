@@ -28,6 +28,15 @@ com.drvy.commandmonitor/
 install.sh          install / upgrade / preview helper
 ```
 
+## Conventions
+
+Following standard KDE practice: every source file carries an SPDX
+license header (`SPDX-FileCopyrightText` / `SPDX-License-Identifier`),
+and every user-facing string in the QML files is wrapped in `i18n()` /
+`i18nc()` so the widget can be translated. Plain-data strings (like a
+command's default name) aren't wrapped, since they're user-edited data,
+not UI chrome.
+
 ## Development
 
 ```sh

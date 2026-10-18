@@ -1,4 +1,6 @@
 .pragma library
+// SPDX-FileCopyrightText: 2026 Dragomir Yordanov <dyordanov@drvy.net>
+// SPDX-License-Identifier: MIT
 
 // Command entry schema:
 // {

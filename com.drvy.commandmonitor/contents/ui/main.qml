@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Dragomir Yordanov <dyordanov@drvy.net>
+// SPDX-License-Identifier: MIT
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
@@ -220,13 +223,13 @@ PlasmoidItem {
 
     Plasmoid.contextualActions: [
         PlasmaCore.Action {
-            text: "Run command"
+            text: i18n("Run command")
             icon.name: "system-run"
             visible: !!(root.contextCommand && root.contextCommand.clickCommand)
             onTriggered: root.runClickCommand(root.contextCommand)
         },
         PlasmaCore.Action {
-            text: "Copy to clipboard"
+            text: i18n("Copy to clipboard")
             icon.name: "edit-copy"
             visible: !!root.contextCommand
             onTriggered: root.copyOutput(root.contextCommand)
@@ -296,7 +299,7 @@ PlasmoidItem {
 
                     PlasmaComponents3.Label {
                         readonly property string firstLine: (root.outputMap[segment.modelData.id] && root.outputMap[segment.modelData.id].richFirstLine) || ""
-                        text: firstLine || "(no output)"
+                        text: firstLine || i18n("(no output)")
                         opacity: firstLine ? 1 : 0.5
                         textFormat: Text.RichText
                         font.family: "monospace"
