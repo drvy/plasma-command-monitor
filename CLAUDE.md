@@ -69,7 +69,7 @@ default planar/desktop mode.)
   but plasmashell logs `KPackageStructure ... does not match requested
   format "Plasma/Applet"` and the widget loses core shell integration —
   concretely, right-click stopped showing the standard Configure/Remove
-  menu. This was the very first, hardest bug to track down this session.
+  menu.
 - **Import path is `org.kde.plasma.plasma5support`**, not
   `org.kde.plasma5support`. The module lives under
   `org/kde/plasma/plasma5support/` on disk; the shorter name (used in
@@ -140,10 +140,7 @@ default planar/desktop mode.)
   in the `.qml` files need wrapping. Data strings (e.g. a new command's
   default name "New command") are deliberately left unwrapped since
   they're user-edited data, not UI text.
-- Git: remote is `github.com/drvy/plasma-command-monitor` (SSH host alias `github.drvy`); one PR per feature, merged with a merge commit. `user.email` is set locally (in this
-  repo's `.git/config`, not global) to `dyordanov@drvy.net`, distinct
-  from the global/work email — don't let a global config change leak in
-  here.
+- Git: remote is `github.com/drvy/plasma-command-monitor` (SSH host alias `github.drvy`); one PR per feature, merged with a merge commit.
 
 ## Known limitations / possible future work
 

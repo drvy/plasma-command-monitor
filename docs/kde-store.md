@@ -30,10 +30,3 @@ Requires KDE Plasma 6.0 or newer.
 2. `./install.sh package` → `dist/com.drvy.commandmonitor-<version>.plasmoid`.
 3. Upload the `.plasmoid` as the product file (or a new version of it).
 4. Tag the release (`git tag -a vX.Y.Z`) and attach the same file on GitHub.
-
-## Still needed (manual)
-
-- A store.kde.org account (log in with your KDE Identity).
-- Screenshots: popup list, panel with several commands, Configure page.
-  Add them to `docs/screenshots/` and upload them to the listing.
-- Optionally a short icon/banner image for the listing.
